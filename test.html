@@ -1,35 +1,9 @@
----
-
-permalink:
-    build: /data/
-    weekly: /data/
----
-{% include 'head.html' %}
-
-
 <h1>Hi</h1>
-<form id="form" action="/data/">
-    <label for="end">End date</label>
-    <input type="date" id="end" name="end">
-    <select name="time" id="time">
-        <option value="week">Week</option>
-        <option value="month">Month</option>
-    </select>
-    <input type="submit" value="Submit">
-</form>
+
 <div id="app"></div>
 
 
 <script>
-
-const form = document.querySelector('#form');
-form.addEventListener('submit', function(e) {
-    e.preventDefault()
-    const end = document.querySelector('#end').value;
-    const time = document.querySelector('#time').value;
-    renderTable(end, time)
-});
-
 
 function getTableHtml(data, title) {
     return `
@@ -237,37 +211,12 @@ async function getData(start, end) {
     return data;
 }
 
-async function renderTable(end, time) {
-
-    document.querySelector("#app").innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
-        <path fill="#C779D0" d="M25,5A20.14,20.14,0,0,1,45,22.88a2.51,2.51,0,0,0,2.49,2.26h0A2.52,2.52,0,0,0,50,22.33a25.14,25.14,0,0,0-50,0,2.52,2.52,0,0,0,2.5,2.81h0A2.51,2.51,0,0,0,5,22.88,20.14,20.14,0,0,1,25,5Z">
-            <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.5s" repeatCount="indefinite"/>
-        </path>
-        </svg>
-        `
-    let days = 7
-
-    if (time == "month") {
-        days = 30
-    }
-
-
-    const endDate = new Date(end)
-    const start = new Date(`${end}`)
-    
-    start.setDate(endDate.getDate() - days)
-
-    const data = await getData(start, end)
-
-    const json = await getData(start, end)
-    const html = await getTableHtml(json, time)
-    
-    document.querySelector("#app").innerHTML = html;
+async function render() {
+    const json = await getData('2022-02-01', `2022-02-08`)
+const html = await getTableHtml(json)
+document.querySelector("#app").innerHTML = html;
 
 }
 
-// render()
+render()
 </script>
-
-</body>
-</html>
