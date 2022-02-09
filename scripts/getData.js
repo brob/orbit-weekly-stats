@@ -166,8 +166,6 @@ module.exports = async function getData(start, end) {
 
 
     }
-    console.log(data)
+
     return data;
-
-
 }
