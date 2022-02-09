@@ -1,0 +1,10 @@
+# Local Netlify folder
+.netlify
+node_modules
+_site
+
+netlify/functions/weekly/**
+!netlify/functions/weekly/index.js
+
+
+.env

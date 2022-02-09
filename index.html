@@ -1,0 +1,16 @@
+---
+title: "Reporting fun"
+---
+{% include 'head.html' %}
+    <h1>Enter an end date and time frame for some stats</h1>
+    <form action="/data/">
+        <label for="end">End date</label>
+        <input type="date" id="end" name="end">
+        <select name="time" id="time">
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+        </select>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>

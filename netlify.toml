@@ -1,0 +1,11 @@
+[build]
+command = "# no build command"
+functions = "netlify/functions"
+publish = "."
+
+[[redirects]]
+from = "/data/"
+to = "/.netlify/functions/weekly"
+status = 200
+force = true
+_generated_by_eleventy_serverless = "weekly"
