@@ -85,15 +85,52 @@ function getTableHtml(data, title) {
             <td>n/a</td>
         </tr>
         </table>
+        <h3>Orbit info</h3>
+        <table class="styled-table">
+            <thead>
+                <td>Orbit</td>
+                <td>Count</td>
+                <td>Percentage</td>
+                <td>Previous</td>
+            </thead>
+                ${[1,2,3,4].map(orbit => `
+                    <tr>
+                        <td>Orbit ${orbit}</td>
+                        <td>${data.orbitActivitiesCount['level'+orbit]}</td>
+                        <td>${(((data.orbitActivitiesCount['level'+orbit] - data.previousOrbitActivitiesCount['level'+orbit]) / data.orbitActivitiesCount['level'+orbit]) * 100).toFixed(2)}%</td>
+                        <td>${data.previousOrbitActivitiesCount['level'+orbit]}</td>
+                    </tr>
 
+                `).join('')}         
+        </table>
     `
 }
 
 async function getFigure(params) {
-    const response = await fetch(`/.netlify/functions/getFigure?${params}`);
-    const data = await response.json();
-    return data;
+    try {
+        const response = await fetch(`/.netlify/functions/getFigure${params}`);
+        const data = await response.json();
+        return data;
+    } catch {
+        return {
+
+        }
+    }
+
 }    
+const orbitReducer = (acc, item) => {
+    for (const [level, count] of Object.entries(item)) {
+        if (level === 'date') acc[level] = count
+        const levelKey = `level${level.split(' ')[1]}`
+        if (!acc[levelKey]) {
+            acc[levelKey] = 0;
+        }
+
+        acc[levelKey] += count;
+    }
+    delete acc['level-undefined']
+    return acc;
+}
 function addMembersReducer(previousValue, currentValue) { return previousValue + currentValue};
 
 async function getData(start, end) {
@@ -187,7 +224,17 @@ async function getData(start, end) {
                                 .map(item => item['Active members'])
                                 .reduce(addMembersReducer);
 
+    const activitiesByOrbitLevels = await getFigure(`?figure_data=activities&affiliation=member&end_date=${end}&group_by=week&start_date=${start}&figure_group_by=orbit_level`)
+   
+    const orbitActivitiesCount = await activitiesByOrbitLevels.data.reduce(orbitReducer, {});
     
+    const previousActivitiesByOrbitLevels = await getFigure(`?figure_data=activities&affiliation=member&end_date=${previousPeriod.end}&group_by=week&start_date=${previousPeriod.start}&figure_group_by=orbit_level`)
+   
+    const previousOrbitActivitiesCount = await previousActivitiesByOrbitLevels.data.reduce(orbitReducer, {});
+
+    
+    console.log({orbitActivitiesCount, previousOrbitActivitiesCount});
+
     const data = {
         'daysCounted': timeBetween,
         totalMembersCount, 
@@ -230,7 +277,8 @@ async function getData(start, end) {
         returningMembersCount,
         previousReturningMembersCount,
         'returningMembersPercentageChange': (((returningMembersCount - previousReturningMembersCount) / returningMembersCount)*100).toFixed(2),
-
+        orbitActivitiesCount,
+        previousOrbitActivitiesCount,
 
     }
     console.log(data)
@@ -256,12 +304,14 @@ async function renderTable(end, time) {
     const start = new Date(`${end}`)
     
     start.setDate(endDate.getDate() - days)
-
-    const data = await getData(start, end)
-
-    const json = await getData(start, end)
-    const html = await getTableHtml(json, time)
-    
+    console.log(start, end)
+    let html
+    try {
+        const json = await getData(start, end)
+        html = await getTableHtml(json, time)
+    } catch {
+        html = `<div class="error">Something went wrong. Please try again later.</div>`
+    }
     document.querySelector("#app").innerHTML = html;
 
 }
