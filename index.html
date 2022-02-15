@@ -32,6 +32,7 @@ form.addEventListener('submit', function(e) {
 
 
 function getTableHtml(data, title) {
+    console.log('building', data, title)
     return `
     <h1>${title} Report</h1>
     <h2>Members</h2>
@@ -57,6 +58,7 @@ function getTableHtml(data, title) {
             <td>${data.previousActiveMemberData.previousActiveMembersCount}</td>
             <td>${data.currentActiveMemberData.activeMembersPercentageChange}%</td>
         </tr>
+        
         <tr>
             <td>Active Users</td>
             <td>${data.currentActiveUserMemberData.totalActiveUserMembersCount}</td>
@@ -85,7 +87,7 @@ function getTableHtml(data, title) {
             <td>n/a</td>
         </tr>
         </table>
-        <h3>Orbit info</h3>
+        <h3>Activities by Orbit Level</h3>
         <table class="styled-table">
             <thead>
                 <td>Orbit</td>
@@ -133,16 +135,17 @@ const orbitReducer = (acc, item) => {
 }
 function addMembersReducer(previousValue, currentValue) { return previousValue + currentValue};
 
-async function getData(start, end) {
+async function getData({start, end, previousStart, previousEnd}) {
     const startDate = new Date(start)
     const endDate = new Date(end)
-    const timeBetween = ((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
 
+    
     const previousPeriod = {
-        start: new Date(startDate.setDate(startDate.getDate() - timeBetween)),
-        end: new Date(endDate.setDate(endDate.getDate() - timeBetween))
+        start: previousStart,
+        end: previousEnd
     }
 
+    
     // Gets total members
     const totalMembers = await getFigure(`?figure_data=members&affiliation=member&cumulative=true&end_date=${end}&group_by=month&start_date=${start}`)
 
@@ -236,7 +239,7 @@ async function getData(start, end) {
     console.log({orbitActivitiesCount, previousOrbitActivitiesCount});
 
     const data = {
-        'daysCounted': timeBetween,
+
         totalMembersCount, 
         previousTotalMembersCount,
         'totalDelta': totalMembersCount - previousTotalMembersCount,
@@ -293,23 +296,48 @@ async function renderTable(end, time) {
         </path>
         </svg>
         `
-    let days = 7
+    let days = 6
 
     if (time == "month") {
         days = 30
     }
 
+    // get date x days agao from end date
+    const endDate = new Date(end.replace(/-/g, '\/').replace(/T.+/, ''));
+    const start = new Date(endDate)
+    start.setHours(0,0,0,0)
 
-    const endDate = new Date(end)
-    const start = new Date(`${end}`)
     
+    // get start date x days ago from end date
     start.setDate(endDate.getDate() - days)
-    console.log(start, end)
+
+
+    // get start date from x days before start date
+    const previousStart = new Date(start)
+    const previousEnd = new Date(endDate)
+    previousStart.setDate(start.getDate() - days - 1)
+    previousEnd.setDate(endDate.getDate() - days - 1)
+
+    const dates = {
+        'start': start.toISOString().split('T')[0],
+        'end': endDate.toISOString().split('T')[0],
+        'previousStart': previousStart.toISOString().split('T')[0],
+        'previousEnd': previousEnd.toISOString().split('T')[0]
+    }
+
+    console.log({dates})
+
+
+    console.log({previousStart})
+
+
+
     let html
     try {
-        const json = await getData(start, end)
+        const json = await getData(dates)
         html = await getTableHtml(json, time)
-    } catch {
+    } catch(err) {
+        console.log(err)
         html = `<div class="error">Something went wrong. Please try again later.</div>`
     }
     document.querySelector("#app").innerHTML = html;
